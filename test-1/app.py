@@ -1,8 +1,7 @@
 import streamlit as st
 import pinecone
 from dotenv import load_dotenv
-from langchain.document_loaders import PyPDFLoader
-
+from PyPDF2 import PdfReader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Pinecone
@@ -14,8 +13,12 @@ from htmlTemplates import css, bot_template, user_template
 pinecone_index_name = "pdf-index"
 
 def get_pdf_text(pdf_docs):
-    loader = PyPDFLoader(pdf_docs)
-    return loader.load()
+    text = ""
+    for pdf in pdf_docs:
+        pdf_reader = PdfReader(pdf)
+        for page in pdf_reader.pages:
+            text += page.extract_text()
+    return text
 
 
 def get_text_chunks(text):
@@ -26,7 +29,7 @@ def get_text_chunks(text):
 
 def get_vectorstore(text_chunks):
     embeddings = OpenAIEmbeddings()
-    vectorstore = Pinecone.from_texts([t.page_content for t in text_chunks], embeddings, index_name=pinecone_index_name)
+    vectorstore = Pinecone(embeddings, index_name=pinecone_index_name)
     return vectorstore
 
 
@@ -80,19 +83,17 @@ def main():
         if st.button("Process"):
             with st.spinner("Processing"):
                 # get pdf text
-                for file in pdf_docs:
-                    print(file)
-                    documents = get_pdf_text(file._file_urls)
+                raw_text = get_pdf_text(pdf_docs)
 
-                    # get the text chunks
-                    texts = get_text_chunks(documents)
+                # get the text chunks
+                texts = get_text_chunks(raw_text)
 
-                    # create vector store
-                    vectorstore = get_vectorstore(texts)
+                # create vector store
+                vectorstore = get_vectorstore(texts)
 
-                    # create conversation chain
-                    # st.session_state.conversation = get_conversation_chain(
-                    #     vectorstore)
+                # create conversation chain
+                # st.session_state.conversation = get_conversation_chain(
+                #     vectorstore)
 
 
 if __name__ == '__main__':
