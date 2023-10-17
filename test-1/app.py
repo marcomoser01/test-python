@@ -76,21 +76,22 @@ def main():
     with st.sidebar:
         st.subheader("Your documents")
         pdf_docs = st.file_uploader(
-            "Upload your PDFs here and click on 'Process'", accept_multiple_files=False)
+            "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
         if st.button("Process"):
             with st.spinner("Processing"):
                 # get pdf text
-                documents = get_pdf_text(pdf_docs)
+                for file in pdf_docs:
+                    documents = get_pdf_text(file._file_urls)
 
-                # get the text chunks
-                texts = get_text_chunks(documents)
+                    # get the text chunks
+                    texts = get_text_chunks(documents)
 
-                # create vector store
-                vectorstore = get_vectorstore(texts)
+                    # create vector store
+                    vectorstore = get_vectorstore(texts)
 
-                # create conversation chain
-                # st.session_state.conversation = get_conversation_chain(
-                #     vectorstore)
+                    # create conversation chain
+                    # st.session_state.conversation = get_conversation_chain(
+                    #     vectorstore)
 
 
 if __name__ == '__main__':
