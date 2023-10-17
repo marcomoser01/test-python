@@ -1,7 +1,8 @@
 import streamlit as st
 import pinecone
 from dotenv import load_dotenv
-from PyPDF2 import PdfReader
+from langchain.document_loaders import PyPDFLoader
+
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Pinecone
@@ -13,12 +14,8 @@ from htmlTemplates import css, bot_template, user_template
 pinecone_index_name = "pdf-index"
 
 def get_pdf_text(pdf_docs):
-    text = ""
-    for pdf in pdf_docs:
-        pdf_reader = PdfReader(pdf)
-        for page in pdf_reader.pages:
-            text += page.extract_text()
-    return text
+    loader = PyPDFLoader(pdf_docs)
+    return loader.load()
 
 
 def get_text_chunks(text):
@@ -83,10 +80,10 @@ def main():
         if st.button("Process"):
             with st.spinner("Processing"):
                 # get pdf text
-                raw_text = get_pdf_text(pdf_docs)
+                documents = get_pdf_text(pdf_docs)
 
                 # get the text chunks
-                texts = get_text_chunks(raw_text)
+                texts = get_text_chunks(documents)
 
                 # create vector store
                 vectorstore = get_vectorstore(texts)
