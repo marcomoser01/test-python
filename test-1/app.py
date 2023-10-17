@@ -2,7 +2,7 @@ import streamlit as st
 import pinecone
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
-from langchain.text_splitter import CharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Pinecone
 from langchain.chat_models import ChatOpenAI
@@ -22,14 +22,9 @@ def get_pdf_text(pdf_docs):
 
 
 def get_text_chunks(text):
-    text_splitter = CharacterTextSplitter(
-        separator="\n",
-        chunk_size=1000,
-        chunk_overlap=200,
-        length_function=len
-    )
-    chunks = text_splitter.create_documents(text)
-    return chunks
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=0)
+    texts = text_splitter.split_documents(text)
+    return texts
 
 
 def get_vectorstore(text_chunks):
@@ -91,10 +86,10 @@ def main():
                 raw_text = get_pdf_text(pdf_docs)
 
                 # get the text chunks
-                text_chunks = get_text_chunks(raw_text)
+                texts = get_text_chunks(raw_text)
 
                 # create vector store
-                vectorstore = get_vectorstore(text_chunks)
+                vectorstore = get_vectorstore(texts)
 
                 # create conversation chain
                 # st.session_state.conversation = get_conversation_chain(
