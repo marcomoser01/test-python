@@ -34,7 +34,7 @@ def get_text_chunks(text):
 
 def get_vectorstore(text_chunks):
     embeddings = OpenAIEmbeddings()
-    vectorstore = Pinecone(embeddings, index_name=pinecone_index_name)
+    vectorstore = Pinecone(index_name=pinecone_index_name, embeddings=embeddings)
     return vectorstore
 
 
