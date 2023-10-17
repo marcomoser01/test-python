@@ -81,6 +81,7 @@ def main():
             with st.spinner("Processing"):
                 # get pdf text
                 for file in pdf_docs:
+                    print(file)
                     documents = get_pdf_text(file._file_urls)
 
                     # get the text chunks
