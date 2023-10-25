@@ -1,0 +1,31 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/terminal.py",
+            "args": ["--debug"],
+            "console": "integratedTerminal",
+            "stopOnEntry": false,
+            "cwd": "${workspaceFolder}",
+            "env": {},
+            "envFile": "${workspaceFolder}/.env",
+            "jinja": false
+        },
+        {
+            "name": "Normale",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/terminal.py",
+            "args": [],
+            "console": "integratedTerminal",
+            "stopOnEntry": false,
+            "cwd": "${workspaceFolder}",
+            "env": {},
+            "envFile": "${workspaceFolder}/.env",
+            "jinja": false
+        }
+    ]
+}
