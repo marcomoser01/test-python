@@ -1,4 +1,4 @@
-*.pdf
+data/
 cronologia.json
 
 # Byte-compiled / optimized / DLL files
