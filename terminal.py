@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os, argparse, json
+import platform
 import shutil
 from typing import List
 from my_package.app import App
@@ -11,6 +12,12 @@ def clean_pycache(path):
         for dir in dirs:
             if dir == "__pycache__":
                 shutil.rmtree(os.path.join(root, dir))
+
+def clear_terminal():
+    if platform.system() == "Windows":
+        os.system("cls")  # Pulisce il terminale su Windows
+    else:
+        os.system("clear")  # Pulisce il terminale su macOS e Linux
 
 def get_file_paths() -> List[str]:
     """
@@ -60,22 +67,49 @@ def chat(vecs):
 
     while True:
         query = input(
-            "Hai una domanda? Scrivi 'q' per uscire o inserisci la tua domanda: "
+            "\nHai una domanda? Scrivi 'q' per uscire o inserisci la tua domanda: "
         )
 
         if query.lower() == "q":
             break  # Esci dal ciclo se l'utente scrive 'q'
         else:
-            print(llm.do_query(query))
+            response, sources = llm.do_query(query)
+            print(response)
+            print("Fonte: " + ", ".join(sources))
 
 def get_choice(prompt: str) -> int:
     while True:
         print(prompt)
         try:
             choice = int(input("Opzione numero: "))
+            print("\n")
             return choice
         except ValueError:
             print("Scelta non valida. Inserisci un numero valido.")
+
+def print_all_sources(sources: []) -> None:
+    print("Sul vector store sono presenti le seguenti sorgenti:")
+    for item in sources:
+        print(f"- {item}")
+
+def get_files_name(sources: []) -> List[str]:
+    files_name = []  # Inizializza una lista vuota per i percorsi dei file
+    
+    while True:
+        file_name = input(
+            "Inserisci il nome del file che vuoi che venga dimenticato (o premi Invio per terminare): "
+        )
+
+        if not file_name:
+            break  # L'utente ha premuto Invio per terminare l'inserimento
+        if file_name in sources:
+            files_name.append(file_name)
+        else:
+            print("La sorgente che ha specificato non è presente sul vector store, in seguito rielenco le sorgenti:")
+            for item in sources:
+                print(f"\n- {item}")
+
+    return files_name
 
 def save_to_json_file(data: [], file_path: str):
     """
@@ -100,9 +134,13 @@ menu = """
 Benvenuto nell'App PDF Chatbot!
 
 Scegli un'opzione:
-1. Carica documenti PDF
-2. Interagisci con il Chatbot
-3. Esci
+\t-1. Per pulire la console
+\t0. Esci
+\t1. Carica documenti PDF
+\t2. Interagisci con il Chatbot
+\t3. Rimuovi documenti dalla memoria
+\t4. Eliminare tutti i dati, compreso l'indice
+\t5. Visualizzare quali file sono salvati
 
 Inserisci il numero corrispondente all'opzione desiderata:
 """
@@ -110,38 +148,61 @@ Inserisci il numero corrispondente all'opzione desiderata:
 
 def main(debug=False) -> None:
     # Inizializza variabili
-    app = App()
+    app = App("pdf-index")
     vectorstore = None
     while True:
         choice = get_choice(menu)
-        if choice:
-            if choice == 1:
+        if choice is not None:
+            
+            if choice == -1:
+                clear_terminal()
+
+            elif choice == 0:
+                print("Ci vediamo in giro")
+                break
+                
+            elif choice == 1:
                 # Carica documenti PDF
                 if debug:
-                    pdf_files = [os.path.abspath("Costituzione.pdf")]
+                    pdf_files = [os.path.abspath("data/Costituzione.pdf")]
                 else:
                     pdf_files = get_file_paths()
                 print("\n")
                     
                 if pdf_files:
                     uploaded, not_uploaded = app.load_pdfs(pdf_files)
+                    # Controllare che i dati vengano aggiunti e non sovrascritti
                     save_to_json_file(uploaded, "cronologia.json")
                     for pdf in not_uploaded:
                         print("Il file " + pdf + " non è stato caricato correttamente")
 
             elif choice == 2:
-                if not vectorstore:
-                    vectorstore, _ = app.get_vectorstore()
+                vectorstore, _ = app.get_vectorstore()
                 if vectorstore:
                     chat(vectorstore)
                 else:
                     print(
                         "Non sono stati trovati dati presenti su pinecone. Per poter chattare con il bot è necessario caricare prima i dati"
                     )
-
+                    
             elif choice == 3:
-                print("Ci vediamo in giro")
-                break
+                all_sources = app.get_sources()
+                if all_sources:
+                    print_all_sources(all_sources)
+                    files_name = get_files_name(all_sources)
+                    if files_name:
+                        app.delete_data_vectorstore(files_name)
+                else:
+                    print("Non è stato trovato l'indice desiderato, assicurarsi prima che l'indice esisti")
+                
+            elif choice == 4:
+                app.delete_index()
+
+            elif choice == 5:
+                all_sources = app.get_sources()
+                if all_sources:
+                    print_all_sources(all_sources)
+
             else:
                 print("L'opzione inserita non era presente nel menu")
 

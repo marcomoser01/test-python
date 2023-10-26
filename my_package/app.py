@@ -5,19 +5,34 @@ from dotenv import load_dotenv
 
 
 class App(object):
-    pinecone_index_name = "pdf-index"
+    _index_name = ""
+    def get_index_name(self):
+        return self._index_name
+
+    def set_index_name(self, index_name):
+        self._index_name = index_name
     
-    def __init__(self):
+    def __init__(self, index_name):
         load_dotenv()
+        self._index_name = index_name
         self.vectorstore = Vectorstore(
             os.getenv("OPENAI_API_KEY"),
             os.getenv("PINECONE_API_KEY"),
             os.getenv("PINECONE_API_ENV"),
-            self.pinecone_index_name,
+            self._index_name,
         )
 
+    def delete_index(self) -> bool:
+        return self.vectorstore.delete_index(self._index_name)
+
     def get_vectorstore(self):
-        return self.vectorstore.get_index(self.pinecone_index_name)
+        return self.vectorstore.get_index(self._index_name)
+
+    def delete_data_vectorstore(self, filename: []):
+        return self.vectorstore.delete_data(self._index_name, filename)
+
+    def get_sources(self) -> []:
+        return self.vectorstore.get_all_source(self._index_name)
 
     def vecs_upload_data(self, data, source: str) -> bool:
         success = self.vectorstore.upload_data(data, source)
