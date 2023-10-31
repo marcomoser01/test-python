@@ -143,6 +143,7 @@ class Vectorstore(object):
         if not vectorstore:
             try:
                 # Crea l'indice solo se non esiste
+                #ToDo La dimensione fallo passare come parametro, anche la metrica. Fallo su tutti i metodi
                 pinecone.create_index(
                     self.pinecone_index_name, metric="cosine", dimension=1536
                 )
@@ -154,6 +155,7 @@ class Vectorstore(object):
                 return False
 
         try:
+            # Provare a vedere soluzioni alternative
             vectorstore = Pinecone.from_documents(
                 docs, embeddings, index_name=self.pinecone_index_name
             )
@@ -175,6 +177,7 @@ class Vectorstore(object):
         Returns:
         - bool: True se l'eliminazione ha avuto successo, altrimenti False.
         """
+        #ToDO controlla che funzioni
         try:
             self._pineconeConfig(self.pinecone_api_key, self.pinecone_api_env)
             index = pinecone.Index(index_name)
@@ -204,6 +207,7 @@ class Vectorstore(object):
         Returns:
         - []: restituisce una stringa in cui vengono elencati tutte le sorgenti presenti
         """
+        #ToDo imlementarlo anche in UI
         self._pineconeConfig(self.pinecone_api_key, self.pinecone_api_env)
         if index_name in pinecone.list_indexes():
             index = pinecone.Index(index_name)

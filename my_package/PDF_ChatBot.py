@@ -1,10 +1,10 @@
 import os
+from my_package.LLM import LLM
 from my_package.vectorstore import Vectorstore
 from my_package.pdf2chunks import Pdf2Chunks
 from dotenv import load_dotenv
 
-
-class App(object):
+class PDF_ChatBot(object):
     _index_name = ""
     def get_index_name(self):
         return self._index_name
@@ -15,6 +15,7 @@ class App(object):
     def __init__(self, index_name):
         load_dotenv()
         self._index_name = index_name
+        self.openai_api_key = os.getenv("OPENAI_API_KEY")
         self.vectorstore = Vectorstore(
             os.getenv("OPENAI_API_KEY"),
             os.getenv("PINECONE_API_KEY"),
@@ -69,3 +70,5 @@ class App(object):
 
         return uploaded, not_uploaded
 
+    def init_LLM(self, vecs):
+        return LLM(self.openai_api_key, vecs)

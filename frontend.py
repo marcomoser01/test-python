@@ -1,5 +1,5 @@
 import streamlit as st
-from my_package.app import App
+from my_package.PDF_ChatBot import PDF_ChatBot
 from my_package.LLM import LLM
 from my_package.pdf2chunks import Pdf2Chunks
 from my_package.htmlTemplates import css, bot_template, user_template
@@ -7,7 +7,7 @@ from my_package.htmlTemplates import css, bot_template, user_template
 class Frontend(object):
 
     @staticmethod
-    def load_pdfs(pdfs, app: App):
+    def load_pdfs(pdfs, pdf_ChatBot: PDF_ChatBot):
         for pdf in pdfs:
             # Salva il file temporaneamente su disco
             with open(pdf.name, "wb") as f:
@@ -18,7 +18,7 @@ class Frontend(object):
             text_chunks = Pdf2Chunks.getChunks(file_url)
 
             # create vector store
-            return app.vecs_upload_data(text_chunks, file_url)
+            return pdf_ChatBot.vecs_upload_data(text_chunks, file_url)
 
     @staticmethod
     def handle_userinput(user_question):
@@ -38,7 +38,7 @@ class Frontend(object):
 
     @staticmethod
     def main():
-        app = App()
+        pdf_ChatBot = PDF_ChatBot()
         st.set_page_config(page_title="Chat with multiple PDFs", page_icon=":books:")
         st.write(css, unsafe_allow_html=True)
 
@@ -60,7 +60,7 @@ class Frontend(object):
             if st.button("Process"):
                 with st.spinner("Processing"):
                     if pdf_docs:
-                        vectorstore = Frontend.load_pdfs(pdf_docs, app)
+                        vectorstore = Frontend.load_pdfs(pdf_docs, pdf_ChatBot)
 
                     if vectorstore:
                         # create conversation chain

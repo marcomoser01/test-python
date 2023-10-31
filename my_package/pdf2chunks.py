@@ -11,6 +11,7 @@ class Pdf2Chunks(object):
 
     @staticmethod
     def getChunks(url: str) -> str:
+        #ToDO impostarli come parametri esterni
         text_splitter = CharacterTextSplitter(
             separator="\n",
             chunk_size=1000,
@@ -40,6 +41,7 @@ class PDFTextExtractor:
         except Exception as e:
             # Gestisce eventuali errori durante l'estrazione del testo
             print(f"Errore durante l'estrazione del testo: {str(e)}")
+            print("Assicurarsi di aver caricato un PDF")
 
         return text
 

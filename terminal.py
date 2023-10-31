@@ -4,8 +4,9 @@ import os, argparse, json
 import platform
 import shutil
 from typing import List
-from my_package.app import App
+from my_package.PDF_ChatBot import PDF_ChatBot
 from my_package.LLM import LLM
+
 
 def clean_pycache(path):
     for root, dirs, files in os.walk(path):
@@ -13,11 +14,13 @@ def clean_pycache(path):
             if dir == "__pycache__":
                 shutil.rmtree(os.path.join(root, dir))
 
+
 def clear_terminal():
     if platform.system() == "Windows":
         os.system("cls")  # Pulisce il terminale su Windows
     else:
         os.system("clear")  # Pulisce il terminale su macOS e Linux
+
 
 def get_file_paths() -> List[str]:
     """
@@ -41,13 +44,15 @@ def get_file_paths() -> List[str]:
             break  # L'utente ha premuto Invio per terminare l'inserimento
 
         if os.path.exists(file_path):
+            print(f"Il file {file_path} è stato trovato e verrà caricato")
             file_paths.append(file_path)
         else:
             print(f"Il file {file_path} non è stato trovato")
 
     return file_paths
 
-def chat(vecs):
+
+def chat(pdf_ChatBot, vecs):
     """
     Avvia una chatbot interattiva che utilizza un modello di linguaggio per rispondere a domande.
 
@@ -63,7 +68,7 @@ def chat(vecs):
     - Per uscire dalla chat, digita 'q' quando richiesto.
     - Altrimenti, inserisci la tua domanda e il chatbot fornirà una risposta basata sul modello.
     """
-    llm = LLM(vecs)
+    llm = pdf_ChatBot.init_LLM(vecs)
 
     while True:
         query = input(
@@ -77,6 +82,7 @@ def chat(vecs):
             print(response)
             print("Fonte: " + ", ".join(sources))
 
+
 def get_choice(prompt: str) -> int:
     while True:
         print(prompt)
@@ -87,14 +93,17 @@ def get_choice(prompt: str) -> int:
         except ValueError:
             print("Scelta non valida. Inserisci un numero valido.")
 
+
 def print_all_sources(sources: []) -> None:
-    print("Sul vector store sono presenti le seguenti sorgenti:")
+    print("Sul vector store sono presenti le seguenti sorgenti:\n")
     for item in sources:
         print(f"- {item}")
+    print("")
+
 
 def get_files_name(sources: []) -> List[str]:
     files_name = []  # Inizializza una lista vuota per i percorsi dei file
-    
+
     while True:
         file_name = input(
             "Inserisci il nome del file che vuoi che venga dimenticato (o premi Invio per terminare): "
@@ -105,11 +114,14 @@ def get_files_name(sources: []) -> List[str]:
         if file_name in sources:
             files_name.append(file_name)
         else:
-            print("La sorgente che ha specificato non è presente sul vector store, in seguito rielenco le sorgenti:")
+            print(
+                "La sorgente che ha specificato non è presente sul vector store, in seguito rielenco le sorgenti:\n"
+            )
             for item in sources:
-                print(f"\n- {item}")
-
+                print(f"- {item}")
+        print("")
     return files_name
+
 
 def save_to_json_file(data: [], file_path: str):
     """
@@ -123,12 +135,15 @@ def save_to_json_file(data: [], file_path: str):
     - True se il salvataggio ha avuto successo, altrimenti False.
     """
     try:
-        with open(file_path, 'w') as json_file:
+        with open(file_path, "w") as json_file:
             json.dump(data, json_file, indent=4)
         return True
     except Exception as e:
-        print(f"Si è verificato un errore durante il salvataggio del file JSON: {str(e)}")
+        print(
+            f"Si è verificato un errore durante il salvataggio del file JSON: {str(e)}"
+        )
         return False
+
 
 menu = """
 Benvenuto nell'App PDF Chatbot!
@@ -148,19 +163,18 @@ Inserisci il numero corrispondente all'opzione desiderata:
 
 def main(debug=False) -> None:
     # Inizializza variabili
-    app = App("pdf-index")
+    pdf_ChatBot = PDF_ChatBot("pdf-index")
     vectorstore = None
     while True:
         choice = get_choice(menu)
         if choice is not None:
-            
             if choice == -1:
                 clear_terminal()
 
             elif choice == 0:
                 print("Ci vediamo in giro")
                 break
-                
+
             elif choice == 1:
                 # Carica documenti PDF
                 if debug:
@@ -168,38 +182,40 @@ def main(debug=False) -> None:
                 else:
                     pdf_files = get_file_paths()
                 print("\n")
-                    
+
                 if pdf_files:
-                    uploaded, not_uploaded = app.load_pdfs(pdf_files)
+                    uploaded, not_uploaded = pdf_ChatBot.load_pdfs(pdf_files)
                     # Controllare che i dati vengano aggiunti e non sovrascritti
                     save_to_json_file(uploaded, "cronologia.json")
                     for pdf in not_uploaded:
                         print("Il file " + pdf + " non è stato caricato correttamente")
 
             elif choice == 2:
-                vectorstore, _ = app.get_vectorstore()
+                vectorstore, _ = pdf_ChatBot.get_vectorstore()
                 if vectorstore:
-                    chat(vectorstore)
+                    chat(pdf_ChatBot, vectorstore)
                 else:
                     print(
                         "Non sono stati trovati dati presenti su pinecone. Per poter chattare con il bot è necessario caricare prima i dati"
                     )
-                    
+
             elif choice == 3:
-                all_sources = app.get_sources()
+                all_sources = pdf_ChatBot.get_sources()
                 if all_sources:
                     print_all_sources(all_sources)
                     files_name = get_files_name(all_sources)
                     if files_name:
-                        app.delete_data_vectorstore(files_name)
+                        pdf_ChatBot.delete_data_vectorstore(files_name)
                 else:
-                    print("Non è stato trovato l'indice desiderato, assicurarsi prima che l'indice esisti")
-                
+                    print(
+                        "Non è stato trovato l'indice desiderato, assicurarsi prima che l'indice esisti"
+                    )
+
             elif choice == 4:
-                app.delete_index()
+                pdf_ChatBot.delete_index()
 
             elif choice == 5:
-                all_sources = app.get_sources()
+                all_sources = pdf_ChatBot.get_sources()
                 if all_sources:
                     print_all_sources(all_sources)
 
