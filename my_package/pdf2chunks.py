@@ -10,16 +10,29 @@ class Pdf2Chunks(object):
         return p.extract_text()
 
     @staticmethod
-    def getChunks(url: str) -> str:
-        #ToDO impostarli come parametri esterni
+    def getChunks(url: str, separator: str = "\n", chunk_size: int = 1000, chunk_overlap: int = 200, length_function: callable = len) -> str:
+        """
+        Estrae e restituisce il testo suddiviso in chunk da un documento PDF.
+
+        Parameters:
+        - url (str): L'URL del documento PDF.
+        - separator (str, optional): Il separatore utilizzato per dividere il testo in chunk (predefinito: "\n").
+        - chunk_size (int, optional): La dimensione dei chunk (predefinito: 1000).
+        - chunk_overlap (int, optional): La sovrapposizione tra i chunk (predefinito: 200).
+        - length_function (callable, optional): Una funzione che calcola la lunghezza del testo (predefinito: len).
+
+        Returns:
+        - chunks (str): Il testo suddiviso in chunk.
+        """
         text_splitter = CharacterTextSplitter(
-            separator="\n",
-            chunk_size=1000,
-            chunk_overlap=200,
-            length_function=len
+            separator=separator,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            length_function=length_function
         )
         chunks = text_splitter.split_text(Pdf2Chunks.getText(url))
         return chunks
+
 
 
 class PDFTextExtractor:
