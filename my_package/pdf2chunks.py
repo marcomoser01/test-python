@@ -1,5 +1,7 @@
+import os
 import PyPDF2
 from langchain.text_splitter import CharacterTextSplitter
+from dotenv import load_dotenv
 
 
 class Pdf2Chunks(object):
@@ -10,7 +12,7 @@ class Pdf2Chunks(object):
         return p.extract_text()
 
     @staticmethod
-    def getChunks(url: str, separator: str = "\n", chunk_size: int = 1000, chunk_overlap: int = 200, length_function: callable = len) -> str:
+    def getChunks(url: str) -> str:
         """
         Estrae e restituisce il testo suddiviso in chunk da un documento PDF.
 
@@ -24,18 +26,25 @@ class Pdf2Chunks(object):
         Returns:
         - chunks (str): Il testo suddiviso in chunk.
         """
+        
+        load_dotenv()
+        pdf_separator = os.getenv("PDF_SEPARATOR", "\n")
+        pdf_chunk_size = int(os.getenv("PDF_CHUNK_SIZE", 1000))
+        pdf_chunk_overlap = int(os.getenv("PDF_CHUNK_OVERLAP", 200))
+        pdf_length_function = os.getenv("PDF_LENGTH_FUNCTION", "len")
+        
         text_splitter = CharacterTextSplitter(
-            separator=separator,
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            length_function=length_function
+            separator=pdf_separator,
+            chunk_size=pdf_chunk_size,
+            chunk_overlap=pdf_chunk_overlap,
+            length_function=pdf_length_function
         )
         chunks = text_splitter.split_text(Pdf2Chunks.getText(url))
         return chunks
 
 
 
-class PDFTextExtractor:
+class PDFTextExtractor(object):
     def __init__(self, pdf_path):
         self.pdf_path = pdf_path
 

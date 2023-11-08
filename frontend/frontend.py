@@ -1,7 +1,7 @@
 import streamlit as st
-from my_package.PDF_ChatBot import PDF_ChatBot
+from my_package.pdfChatBot import PDF_ChatBot
 from my_package.pdf2chunks import Pdf2Chunks
-from my_package.htmlTemplates import css, bot_template, user_template
+from frontend.my_package.htmlTemplates import css, bot_template, user_template
 
 class Frontend(object):
 

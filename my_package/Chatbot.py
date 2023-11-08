@@ -1,50 +1,55 @@
 import json
+import os
 from typing import List
 from langchain.llms import OpenAI
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
+from langchain.memory import ConversationBufferMemory
+from my_package.vectorstore import Vectorstore
+from dotenv import load_dotenv
 
 
 class Chatbot:
-    def __init__(self, openai_api_key, openai_model_name, data_retriever):
-        # Recupera i dati da Pinecone
-        self.data = data_retriever
+    def __init__(self, data_retriever):
+        self._get_env()
+        self.chat_memory_vec = Vectorstore(self._pinecone_index_name)
+        self.chat_memory_vec.create_index()
+        settings_llm = {
+            'temperature': self._openai_temperature, 
+            'top_p': self._openai_top_p,
+            'presence_penalty': self._openai_presence_penalty,
+            'frequency_penalty': self._openai_frequency_penalty
+        }
 
-        # Inizializza OpenAI
-        self.openai_api_key = openai_api_key
-        self.openai_model_name = openai_model_name
-        
-        prompt_template = '''Te sei un assistente e ti viene chiesto di interpretare il contenuto di PDF.
-        L'utente ti farà domande riferite ai PDF e te dovrai rispondere in modo efficace, utilizza soltanto i dati che ti vengono caricati nel contesto.
-        Nel caso in cui non ci fossero informazioni per rispondere, rispondi dicendomi 'non ho dati a riguardo'
-        
-        {context}
-
-        Question: {question}
-        Answer in Italian:     
-        '''
-        
         PROMPT = PromptTemplate(
-            template=prompt_template, input_variables=["context", "question"]
+            template=self._openai_prompt_template, 
+            input_variables=["context", "history", "question"]
         )
-        
-        chain_type_kwargs = {"prompt": PROMPT}
 
-        
-        
-        llm = OpenAI(
-            temperature=0, top_p=0.2, presence_penalty=0.4, frequency_penalty=0.2
-        )
+        memory = ConversationBufferMemory(memory_key="history", input_key="question")
+
+        chain_type_kwargs = {"verbose": True, "prompt": PROMPT, "memory": memory}
 
         self.qa = RetrievalQA.from_chain_type(
-            llm=llm,
+            llm=OpenAI(**settings_llm),
             chain_type="stuff",
             retriever=data_retriever,
+            verbose=True,
             return_source_documents=True,
-            chain_type_kwargs=chain_type_kwargs
+            chain_type_kwargs=chain_type_kwargs,
         )
         print()
 
+    def _get_env(self):
+        load_dotenv()
+        self._openai_api_key = os.getenv("OPENAI_API_KEY")
+        self._openai_model_name = os.getenv("OPENAI_MODEL_NAME")
+        self._openai_temperature = float(os.getenv("OPENAI_TEMPERATURE"))
+        self._openai_top_p = float(os.getenv("OPENAI_TOP_P"))
+        self._openai_presence_penalty = float(os.getenv("OPENAI_PRESENCE_PENALTY"))
+        self._openai_frequency_penalty = float(os.getenv("OPENAI_FREQUENCY_PENALTY"))
+        self._openai_prompt_template = os.getenv("OPENAI_PROMPT_TEMPLATE")
+        self._pinecone_index_name = os.getenv("PINECONE_INDEX_NAME")
 
     @staticmethod
     def remove_duplicates(data: List[str]) -> List[str]:
@@ -58,20 +63,20 @@ class Chatbot:
         """
         result = []
         for item in data:
-            item = json.loads(item.json())['metadata']['source']
+            item = json.loads(item.json())["metadata"]["source"]
             if item not in result:
                 result.append(item)
         return result
 
-
-    def chat(self, query: str) -> str:
+    def chat(self, query: str) -> (str, [str], str):
         response = ""
-        result = self.qa({'query': query})
-        if 'non ho dati a riguardo' not in str(result['result']).lower():
-            sources = Chatbot.remove_duplicates(result['source_documents'])
-            response = result['result']
+        sources = []
+        result = self.qa({"query": query})
+        self.chat_memory_vec.upload_data([query], "chat_memory")
+        if "non ho dati a riguardo" not in str(result["result"]).lower():
+            sources = Chatbot.remove_duplicates(result["source_documents"])
+            response = result["result"]
             response += "\nQuesti dati sono stati trovati nelle seguenti sorgenti: "
-            response += ", ".join(sources)
         else:
             response = "Non sono stati caricati dati a riguardo.\n"
-        return response
+        return response, sources, self._openai_model_name

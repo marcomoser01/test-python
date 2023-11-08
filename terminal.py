@@ -4,8 +4,7 @@ import os, argparse, json
 import platform
 import shutil
 from typing import List
-from my_package.Chatbot import Chatbot
-from my_package.PDF_ChatBot import PDF_ChatBot
+from my_package.apiRoutes import ApiRoutes
 
 menu = """
 Benvenuto nell'App PDF Chatbot!
@@ -21,8 +20,7 @@ Scegli un'opzione:
 
 Inserisci il numero corrispondente all'opzione desiderata:
 """
-
-pdf_ChatBot = None
+app = None
 
 def clean_pycache(path):
     for root, dirs, files in os.walk(path):
@@ -65,7 +63,7 @@ def get_file_paths() -> List[str]:
 
     return file_paths
 
-def chat(vecs):
+def chat():
     """
     Avvia una chatbot interattiva che utilizza un modello di linguaggio per rispondere a domande.
 
@@ -81,7 +79,7 @@ def chat(vecs):
     - Per uscire dalla chat, digita 'q' quando richiesto.
     - Altrimenti, inserisci la tua domanda e il chatbot fornirà una risposta basata sul modello.
     """
-    if pdf_ChatBot.init_ChatBot("gpt-4", vecs):
+    if app.init_ChatBot():
         while True:
             query = input(
                 "\nHai una domanda? Scrivi 'q' per uscire o inserisci la tua domanda: "
@@ -91,7 +89,9 @@ def chat(vecs):
                 break  # Esci dal ciclo se l'utente scrive 'q'
             else:
                 print()
-                print(pdf_ChatBot.interact_with_chatbot(query))
+                response, sources = app.chat(query)
+                print(response)
+                print("Sorgenti: " + " ,".join(sources))
     else:
         print("Non siamo riusciti ad inizializzare una conversazione con il chatbot")
 
@@ -140,7 +140,7 @@ def choice_1(debug: bool):
     print("\n")
 
     if pdf_files:
-        uploaded, not_uploaded, history_state = pdf_ChatBot.upload_pdfs(pdf_files, "cronologia.json")
+        uploaded, not_uploaded, history_state = app.upload_pdfs(pdf_files)
         for pdf in not_uploaded:
             print("Il file " + pdf + " non è stato caricato correttamente")
         
@@ -149,30 +149,21 @@ def choice_1(debug: bool):
             for file in uploaded:
                 print(f"- {file}")
 
-def choice_2():
-    vectorstore, _ = pdf_ChatBot.get_vectorstore()
-    if vectorstore:
-        chat(vectorstore)
-    else:
-        print(
-            "Non sono stati trovati dati presenti su pinecone. Per poter chattare con il bot è necessario caricare prima i dati"
-        )
-
 def choice_3():
-    all_sources = pdf_ChatBot.get_sources()
+    all_sources = app.get_sources()
     if all_sources:
         print_all_sources(all_sources)
         files_name = get_files_name(all_sources)
         if files_name:
             #TODO gestire il risultato del metodo
-            pdf_ChatBot.delete_data_vectorstore(files_name)
+            app.delete_source(files_name)
     else:
         print(
             "Non è stato trovato l'indice desiderato, assicurarsi prima che l'indice esisti"
         )
 
 def choice_5():
-    all_sources = pdf_ChatBot.get_sources()
+    all_sources = app.get_sources()
     if all_sources:
         print_all_sources(all_sources)
 
@@ -195,13 +186,13 @@ def main(debug=False) -> None:
                 choice_1(debug)
 
             elif choice == 2:
-                choice_2()
+                chat
 
             elif choice == 3:
                 choice_3()
 
             elif choice == 4:
-                pdf_ChatBot.delete_index()
+                app.delete_index()
 
             elif choice == 5:
                 choice_5()
@@ -217,6 +208,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     
-    pdf_ChatBot = PDF_ChatBot("pdf-index")
+    app = ApiRoutes()
     main(args.debug)
     clean_pycache(os.getcwd())

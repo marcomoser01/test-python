@@ -4,7 +4,7 @@
 import json
 
 from flask import Flask, request, jsonify
-from my_package.ApiRoutes import ApiRoutes
+from my_package.apiRoutes import ApiRoutes
 
 app = Flask(__name__)
 
@@ -16,7 +16,7 @@ def info():
     }
     return jsonify(result)
 
-@app.route("/createIndex", methods=['GET'])
+@app.route("/create/index", methods=['GET'])
 def createIndex():
     res = ""
     routes = ApiRoutes()
@@ -28,11 +28,16 @@ def createIndex():
 
     return jsonify(res)
 
-@app.route("/getSources", methods=['GET'])
+@app.route("/get/sources", methods=['GET'])
 def getSources():
     res = ""
     routes = ApiRoutes()
     res = routes.get_sources()
+    if len(res) == 0:
+        res = {
+            "state": 200,
+            "message": "Non sono presenti sorgenti di dati"
+        }
 
     return jsonify(res)
 
@@ -69,7 +74,7 @@ def deleteSources():
 
     return jsonify(res)
 
-@app.route("/deleteAll", methods=['GET'])
+@app.route("/delete/all", methods=['GET'])
 def deleteAll():
     res = ""
     routes = ApiRoutes()
@@ -82,7 +87,7 @@ def deleteAll():
 
     return jsonify(res)
 
-@app.route("/deleteIndex", methods=['GET'])
+@app.route("/delete/index", methods=['GET'])
 def deleteIndex():
     res = ""
     routes = ApiRoutes()
@@ -109,10 +114,14 @@ def chat():
 		}
     else:
         routes = ApiRoutes()
-        if routes.init_ChatBot('gpt-4'):
+        if routes.init_ChatBot():
+            respone, sources, model = routes.chat(data['query'])
             res = {
                 "state": 200,
-                "message": routes.chat(data['query'])
+                "model": model,
+                "query": data['query'],
+                "message": respone,
+                "sources": " ,".join(sources)
             }
             
         else:
